@@ -20,28 +20,27 @@ Il file `TestNegozioOnline.cs` è separato dal programma principale e contiene t
 
 ## UML del template
 
-Il template introduce `Utente` come classe madre. Gli studenti possono estenderla creando
-classi figlie, per esempio per distinguere clienti e amministratori, senza cambiare i
-contratti già presenti. Gli acquisti sono associati a un `Utente`, mentre il filtro dello
-storico continua a usare il nome utente come richiesto dalla traccia.
+Il template introduce `Utente` e `Prodotto` come classi madri. Gli acquisti sono
+associati a un `Utente`, mentre il filtro dello storico continua a usare il nome utente
+come richiesto dalla traccia.
 
 ```mermaid
 %%{init: {"flowchart": {"curve": "linear"}} }%%
 flowchart TB
-    Program["Program<br/>Main()"]
-    App["ApplicazioneNegozio<br/>menu utente e amministratore"]
-    Servizio["ServizioNegozio<br/>coordina le operazioni"]
+    Program["Program<br/>+ Main()"]
+    App["ApplicazioneNegozio<br/>- catalogoProdotti<br/>- carrelloUtente<br/>- storicoAcquisti<br/>- servizioNegozio<br/>+ Avvia()<br/>- GestisciMenuUtente()<br/>- GestisciMenuAmministratore()"]
+    Servizio["ServizioNegozio<br/>+ AggiungiProdottoAlCarrello()<br/>+ ConfermaAcquisto(Utente)<br/>+ CreaReportProdotti()<br/>+ StampaAcquisto()<br/>+ StampaReportProdotti()"]
 
-    Catalogo["CatalogoProdotti"]
-    Carrello["CarrelloUtente"]
-    Storico["StoricoAcquisti"]
+    Catalogo["CatalogoProdotti<br/>+ AggiungiProdotto()<br/>+ EliminaProdotto()<br/>+ CercaProdottoPerCodice()<br/>+ ModificaPrezzoProdotto()<br/>+ ModificaQuantitaProdotto()"]
+    Carrello["CarrelloUtente<br/>+ AggiungiAlCarrello()<br/>+ ModificaQuantitaNelCarrello()<br/>+ RimuoviDalCarrello()<br/>+ SvuotaCarrello()<br/>+ CalcolaTotale()"]
+    Storico["StoricoAcquisti<br/>+ RegistraAcquisto()<br/>+ OttieniTuttiGliAcquisti()<br/>+ OttieniAcquistiPerUtente()"]
 
-    Prodotto["Prodotto<br/>classe madre estendibile"]
-    RigaCarrello["ElementoCarrello"]
-    Utente["Utente<br/>classe madre estendibile"]
-    Acquisto["Acquisto"]
-    RigaAcquisto["ElementoAcquistato"]
-    Report["ReportProdotto"]
+    Prodotto["Prodotto<br/>classe madre<br/>CodiceProdotto<br/>Nome<br/>Prezzo<br/>QuantitaDisponibile<br/>QuantitaIniziale"]
+    RigaCarrello["ElementoCarrello<br/>ProdottoSelezionato<br/>QuantitaScelta<br/>PrezzoUnitario<br/>+ CalcolaTotaleParziale()"]
+    Utente["Utente<br/>classe madre<br/>Nome"]
+    Acquisto["Acquisto<br/>Utente<br/>NomeUtente<br/>ProdottiAcquistati<br/>TotaleOrdine<br/>DataAcquisto"]
+    RigaAcquisto["ElementoAcquistato<br/>CodiceProdotto<br/>NomeProdotto<br/>QuantitaAcquistata<br/>PrezzoUnitario<br/>TotaleParziale"]
+    Report["ReportProdotto<br/>CodiceProdotto<br/>NomeProdotto<br/>QuantitaIniziale<br/>QuantitaVenduta<br/>QuantitaDisponibile"]
 
     ICatalogo["IGestioneCatalogo"]
     ICarrello["IGestioneCarrello"]
@@ -49,9 +48,6 @@ flowchart TB
 
     Program --> App
     App --> Servizio
-    App --> Catalogo
-    App --> Carrello
-    App --> Storico
 
     Servizio --> Catalogo
     Servizio --> Carrello
@@ -78,7 +74,7 @@ Sono già pronti alcuni metodi di base e i metodi di visualizzazione, così lo s
 concentrarsi sulle operazioni richieste dalla traccia:
 
 - caricamento dei prodotti iniziali;
-- classe madre `Utente`, estendibile con classi figlie;
+- classe madre `Utente`;
 - ricerca prodotto per codice;
 - protezione da codici prodotto duplicati;
 - calcolo totale carrello;
