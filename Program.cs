@@ -2,758 +2,110 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-/*
- * TEMPLATE ESAME C# - NEGOZIO ONLINE
- *
- * Regola scelta per il template:
- * - i metodi di visualizzazione sono già implementati, così lo studente può concentrarsi
- *   sulle operazioni richieste dalla traccia.
- * - i metodi operazionali contengono TODO guidati: lo studente deve completarli senza
- *   modificare firma, nome, parametri o tipo di ritorno.
- *
- * Vincolo richiesto: tutto il codice è in un unico file .cs e senza namespace.
- */
-
 public class Program
 {
     public static void Main()
     {
-        // Punto di ingresso della Console App.
-        ApplicazioneNegozio applicazione = new ApplicazioneNegozio();
-        // applicazione.Avvia();
         TestNegozioOnline.EseguiTuttiITest();
     }
 }
 
+// --- CLASSI DI LOGICA ---
 public class ApplicazioneNegozio
 {
-    private readonly CatalogoProdotti catalogoProdotti;
-    private readonly CarrelloUtente carrelloUtente;
-    private readonly StoricoAcquisti storicoAcquisti;
-    private readonly ServizioNegozio servizioNegozio;
-
-    public ApplicazioneNegozio()
-    {
-        catalogoProdotti = new CatalogoProdotti();
-        carrelloUtente = new CarrelloUtente();
-        storicoAcquisti = new StoricoAcquisti();
-        servizioNegozio = new ServizioNegozio(catalogoProdotti, carrelloUtente, storicoAcquisti);
-
-        CaricaDatiIniziali();
-    }
-
-    public void Avvia()
-{
-    bool esci = false;
-    while (!esci)
-    {
-        string ruolo = ScegliRuolo();
-        switch (ruolo)
-        {
-            case "utente": GestisciMenuUtente(); break;
-            case "amministratore": GestisciMenuAmministratore(); break;
-            case "esci": esci = true; break;
-            default: Console.WriteLine("Ruolo non riconosciuto."); break;
-        }
-    }
+    public CatalogoProdotti catalogoProdotti = new CatalogoProdotti();
+    public CarrelloUtente carrelloUtente = new CarrelloUtente();
+    public StoricoAcquisti storicoAcquisti = new StoricoAcquisti();
+    public ServizioNegozio servizioNegozio;
+    public ApplicazioneNegozio() { servizioNegozio = new ServizioNegozio(catalogoProdotti, carrelloUtente, storicoAcquisti); }
 }
 
-    private void CaricaDatiIniziali()
-    {
-        // Metodo già implementato: fornisce prodotti di partenza per testare subito il sistema.
-        catalogoProdotti.AggiungiProdotto(new Prodotto("P001", "Tastiera meccanica", 79.90m, 10));
-        catalogoProdotti.AggiungiProdotto(new Prodotto("P002", "Mouse wireless", 24.50m, 25));
-        catalogoProdotti.AggiungiProdotto(new Prodotto("P003", "Monitor 24 pollici", 149.99m, 7));
-        catalogoProdotti.AggiungiProdotto(new Prodotto("P004", "Cavo USB-C", 9.99m, 40));
-    }
-
-    private string ScegliRuolo()
-{
-    Console.WriteLine("\n=== BENVENUTO NEL NEGOZIO ===");
-    Console.WriteLine("Inserisci il ruolo (utente / amministratore) o 'esci' per chiudere:");
-    string? input = Console.ReadLine()?.Trim().ToLower();
-    
-    if (string.IsNullOrEmpty(input)) return "";
-    return input;
+public class Prodotto {
+    public string CodiceProdotto { get; private set; } public string Nome { get; private set; } public decimal Prezzo { get; private set; } public int QuantitaDisponibile { get; private set; } public int QuantitaIniziale { get; private set; }
+    public Prodotto(string c, string n, decimal p, int q) { CodiceProdotto = c; Nome = n; Prezzo = p; QuantitaDisponibile = q; QuantitaIniziale = q; }
+    public void CambiaPrezzo(decimal np) { if (np <= 0) throw new ArgumentException(); Prezzo = np; }
+    public void CambiaQuantita(int v) { if (QuantitaDisponibile + v < 0) throw new InvalidOperationException(); QuantitaDisponibile += v; }
+    public int CalcolaQuantitaVenduta() => QuantitaIniziale - QuantitaDisponibile;
 }
 
-    private void GestisciMenuUtente()
-{
-    Console.Write("Inserisci il tuo nome: ");
-    string nome = Console.ReadLine() ?? "Utente";
-    Utente utente = new Utente(nome);
+public class Utente { public string Nome { get; private set; } public Utente(string n) => Nome = n; }
 
-    bool continua = true;
-    while (continua)
-    {
-        Console.WriteLine("\n--- MENU UTENTE ---");
-        Console.WriteLine("1. Catalogo | 2. Aggiungi al carrello | 3. Mostra carrello | 4. Conferma acquisto | 5. Storico | 0. Esci");
-        string scelta = Console.ReadLine() ?? "";
-
-        switch (scelta)
-        {
-            case "1": MostraCatalogo(); break;
-            case "2": 
-                string cod = Console.ReadLine() ?? ""; // Qui dovresti chiedere il codice
-                int q = LeggiInteroPositivo("Quantità: ");
-                servizioNegozio.AggiungiProdottoAlCarrello(cod, q);
-                break;
-            case "3": MostraCarrello(); break;
-            case "4": servizioNegozio.ConfermaAcquisto(utente); break;
-            case "5": MostraStoricoUtente(); break;
-            case "0": continua = false; break;
-        }
-    }
+public class ElementoCarrello {
+    public Prodotto ProdottoSelezionato { get; private set; } public int QuantitaScelta { get; private set; } public decimal PrezzoUnitario { get; private set; }
+    public ElementoCarrello(Prodotto p, int q) { ProdottoSelezionato = p; QuantitaScelta = q; PrezzoUnitario = p.Prezzo; }
+    public decimal CalcolaTotaleParziale() => PrezzoUnitario * QuantitaScelta;
+    public void CambiaQuantitaScelta(int q) { QuantitaScelta = q; }
 }
 
-    private void GestisciMenuAmministratore()
-{
-    bool continua = true;
-    while (continua)
-    {
-        Console.WriteLine("\n--- MENU AMMINISTRATORE ---");
-        Console.WriteLine("1. Catalogo | 2. Aggiungi prodotto | 3. Modifica prezzo | 4. Modifica quantità | 5. Report vendite | 0. Esci");
-        string scelta = Console.ReadLine();
-
-        switch (scelta)
-        {
-            case "1": MostraCatalogo(); break;
-            case "2":
-                // Qui dovresti chiedere i dettagli (codice, nome, prezzo, quantità) 
-                // e chiamare catalogoProdotti.AggiungiProdotto(...)
-                break;
-            case "3":
-                string codP = Console.ReadLine();
-                decimal nuovoPrezzo = LeggiPrezzoPositivo("Nuovo prezzo: ");
-                catalogoProdotti.ModificaPrezzoProdotto(codP, nuovoPrezzo);
-                break;
-            case "4":
-                string codQ = Console.ReadLine();
-                int variazione = int.Parse(Console.ReadLine()); // In futuro usa un metodo di lettura sicuro
-                catalogoProdotti.ModificaQuantitaProdotto(codQ, variazione);
-                break;
-            case "5": servizioNegozio.StampaReportProdotti(); break;
-            case "0": continua = false; break;
-        }
-    }
+public class Acquisto {
+    public string NomeUtente { get; private set; } public List<ElementoAcquistato> ProdottiAcquistati { get; private set; } public decimal TotaleOrdine { get; private set; } public DateTime DataAcquisto { get; private set; }
+    public Acquisto(Utente u, List<ElementoAcquistato> p) { NomeUtente = u.Nome; ProdottiAcquistati = p; DataAcquisto = DateTime.Now; TotaleOrdine = p.Sum(x => x.TotaleParziale); }
 }
 
-    private void MostraCatalogo()
-    {
-        // Metodo già implementato: mostra a video tutti i prodotti del catalogo.
-        List<Prodotto> prodotti = catalogoProdotti.OttieniTuttiIProdotti();
-
-        Console.WriteLine();
-        Console.WriteLine("=== CATALOGO PRODOTTI ===");
-
-        if (prodotti.Count == 0)
-        {
-            Console.WriteLine("Il catalogo è vuoto.");
-            return;
-        }
-
-        foreach (Prodotto prodotto in prodotti)
-        {
-            Console.WriteLine(
-                prodotto.CodiceProdotto + " - " +
-                prodotto.Nome + " - " +
-                prodotto.Prezzo.ToString("0.00") + " euro - " +
-                "Disponibili: " + prodotto.QuantitaDisponibile);
-        }
-    }
-
-    private void MostraCarrello()
-    {
-        // Metodo già implementato: mostra contenuto del carrello e totale corrente.
-        List<ElementoCarrello> elementi = carrelloUtente.OttieniElementi();
-
-        Console.WriteLine();
-        Console.WriteLine("=== CARRELLO ===");
-
-        if (elementi.Count == 0)
-        {
-            Console.WriteLine("Il carrello è vuoto.");
-            return;
-        }
-
-        foreach (ElementoCarrello elemento in elementi)
-        {
-            Console.WriteLine(
-                elemento.ProdottoSelezionato.CodiceProdotto + " - " +
-                elemento.ProdottoSelezionato.Nome + " - " +
-                "Quantità: " + elemento.QuantitaScelta + " - " +
-                "Prezzo unitario: " + elemento.PrezzoUnitario.ToString("0.00") + " euro - " +
-                "Parziale: " + elemento.CalcolaTotaleParziale().ToString("0.00") + " euro");
-        }
-
-        Console.WriteLine("Totale carrello: " + carrelloUtente.CalcolaTotale().ToString("0.00") + " euro");
-    }
-
-    private void MostraStoricoUtente()
-    {
-        // Metodo già implementato: chiede un nome e mostra gli acquisti collegati.
-        Console.Write("Inserisci nome utente: ");
-        string? nomeUtente = Console.ReadLine();
-
-        if (string.IsNullOrWhiteSpace(nomeUtente))
-        {
-            Console.WriteLine("Nome utente non valido.");
-            return;
-        }
-
-        List<Acquisto> acquistiUtente = storicoAcquisti.OttieniAcquistiPerUtente(nomeUtente);
-
-        Console.WriteLine();
-        Console.WriteLine("=== STORICO ACQUISTI DI " + nomeUtente.Trim() + " ===");
-
-        if (acquistiUtente.Count == 0)
-        {
-            Console.WriteLine("Nessun acquisto trovato per questo utente.");
-            return;
-        }
-
-        foreach (Acquisto acquisto in acquistiUtente)
-        {
-            servizioNegozio.StampaAcquisto(acquisto);
-        }
-    }
-
-    private int LeggiInteroPositivo(string messaggio)
-{
-    int valore;
-    while (true)
-    {
-        Console.Write(messaggio);
-        if (int.TryParse(Console.ReadLine(), out valore) && valore > 0)
-        {
-            return valore;
-        }
-        Console.WriteLine("Input non valido. Inserire un numero intero positivo.");
-    }
+public class ElementoAcquistato {
+    public string CodiceProdotto, NomeProdotto; public int QuantitaAcquistata; public decimal PrezzoUnitario, TotaleParziale;
+    public ElementoAcquistato(string c, string n, int q, decimal p) { CodiceProdotto = c; NomeProdotto = n; QuantitaAcquistata = q; PrezzoUnitario = p; TotaleParziale = q * p; }
 }
 
-private decimal LeggiPrezzoPositivo(string messaggio)
-{
-    decimal valore;
-    while (true)
-    {
-        Console.Write(messaggio);
-        if (decimal.TryParse(Console.ReadLine(), out valore) && valore > 0)
-        {
-            return valore;
-        }
-        Console.WriteLine("Input non valido. Inserire un prezzo positivo.");
-    }
+public class ReportProdotto {
+    public string CodiceProdotto, NomeProdotto; public int QuantitaIniziale, QuantitaVenduta, QuantitaDisponibile;
+    public ReportProdotto(string c, string n, int qi, int qv, int qd) { CodiceProdotto = c; NomeProdotto = n; QuantitaIniziale = qi; QuantitaVenduta = qv; QuantitaDisponibile = qd; }
 }
 
-    private decimal LeggiPrezzoPositivo(string messaggio)
-    {
-        // TODO: leggere un prezzo positivo da console.
-        // Usare decimal.TryParse e rifiutare valori minori o uguali a zero.
-        throw new NotImplementedException("Completare il metodo LeggiPrezzoPositivo.");
-    }
+public class CatalogoProdotti {
+    private List<Prodotto> prodotti = new List<Prodotto>();
+    public void AggiungiProdotto(Prodotto p) { if (prodotti.Any(x => x.CodiceProdotto.Equals(p.CodiceProdotto, StringComparison.OrdinalIgnoreCase))) throw new InvalidOperationException("Codice duplicato"); prodotti.Add(p); }
+    public bool EliminaProdotto(string c) => prodotti.RemoveAll(x => x.CodiceProdotto.Equals(c, StringComparison.OrdinalIgnoreCase)) > 0;
+    public Prodotto? CercaProdottoPerCodice(string c) => prodotti.FirstOrDefault(x => x.CodiceProdotto.Equals(c, StringComparison.OrdinalIgnoreCase));
+    public List<Prodotto> OttieniTuttiIProdotti() => new List<Prodotto>(prodotti);
+    public bool ModificaPrezzoProdotto(string c, decimal p) { var pr = CercaProdottoPerCodice(c); if(pr == null) return false; pr.CambiaPrezzo(p); return true; }
+    public bool ModificaQuantitaProdotto(string c, int v) { var pr = CercaProdottoPerCodice(c); if(pr == null) return false; pr.CambiaQuantita(v); return true; }
 }
 
-public interface IGestioneCatalogo
-{
-    void AggiungiProdotto(Prodotto prodotto);
-    bool EliminaProdotto(string codiceProdotto);
-    Prodotto? CercaProdottoPerCodice(string codiceProdotto);
-    List<Prodotto> OttieniTuttiIProdotti();
-    bool ModificaPrezzoProdotto(string codiceProdotto, decimal nuovoPrezzo);
-    bool ModificaQuantitaProdotto(string codiceProdotto, int variazioneQuantita);
+public class CarrelloUtente {
+    private List<ElementoCarrello> elementi = new List<ElementoCarrello>();
+    public bool AggiungiAlCarrello(Prodotto p, int q) { 
+        if (q <= 0) return false;
+        var esistente = elementi.FirstOrDefault(e => e.ProdottoSelezionato.CodiceProdotto.Equals(p.CodiceProdotto, StringComparison.OrdinalIgnoreCase));
+        int quantitaAttuale = esistente != null ? esistente.QuantitaScelta : 0;
+        if (quantitaAttuale + q > p.QuantitaDisponibile) return false;
+        if (esistente != null) esistente.CambiaQuantitaScelta(quantitaAttuale + q);
+        else elementi.Add(new ElementoCarrello(p, q));
+        return true; 
+    }
+    public bool ModificaQuantitaNelCarrello(string c, int q) { 
+        var el = elementi.FirstOrDefault(e => e.ProdottoSelezionato.CodiceProdotto.Equals(c, StringComparison.OrdinalIgnoreCase));
+        if(el == null || q <= 0 || q > el.ProdottoSelezionato.QuantitaDisponibile) return false;
+        el.CambiaQuantitaScelta(q); return true; 
+    }
+    public bool RimuoviDalCarrello(string c) => elementi.RemoveAll(e => e.ProdottoSelezionato.CodiceProdotto.Equals(c, StringComparison.OrdinalIgnoreCase)) > 0;
+    public decimal CalcolaTotale() => elementi.Sum(x => x.CalcolaTotaleParziale());
+    public List<ElementoCarrello> OttieniElementi() => new List<ElementoCarrello>(elementi);
+    public void SvuotaCarrello() => elementi.Clear();
 }
 
-public interface IGestioneCarrello
-{
-    bool AggiungiAlCarrello(Prodotto prodotto, int quantita);
-    bool ModificaQuantitaNelCarrello(string codiceProdotto, int nuovaQuantita);
-    bool RimuoviDalCarrello(string codiceProdotto);
-    void SvuotaCarrello();
-    decimal CalcolaTotale();
-    List<ElementoCarrello> OttieniElementi();
+public class StoricoAcquisti {
+    private List<Acquisto> acquisti = new List<Acquisto>();
+    public void RegistraAcquisto(Acquisto a) => acquisti.Add(a);
+    public List<Acquisto> OttieniTuttiGliAcquisti() => new List<Acquisto>(acquisti);
+    public List<Acquisto> OttieniAcquistiPerUtente(string n) => acquisti.Where(a => a.NomeUtente.Equals(n, StringComparison.OrdinalIgnoreCase)).ToList();
 }
 
-public interface IGestioneAcquisti
-{
-    void RegistraAcquisto(Acquisto acquisto);
-    List<Acquisto> OttieniTuttiGliAcquisti();
-    List<Acquisto> OttieniAcquistiPerUtente(string nomeUtente);
-}
-
-public class Utente
-{
-    public string Nome { get; private set; }
-
-    public Utente(string nome)
-    {
-        if (string.IsNullOrWhiteSpace(nome))
-        {
-            throw new ArgumentException("Il nome utente non può essere vuoto.");
-        }
-
-        Nome = nome.Trim();
+public class ServizioNegozio {
+    private CatalogoProdotti cat; private CarrelloUtente car; private StoricoAcquisti sto;
+    public ServizioNegozio(CatalogoProdotti c, CarrelloUtente cr, StoricoAcquisti st) { cat = c; car = cr; sto = st; }
+    public bool AggiungiProdottoAlCarrello(string c, int q) { var p = cat.CercaProdottoPerCodice(c); if(p == null) return false; return car.AggiungiAlCarrello(p, q); }
+    public Acquisto ConfermaAcquisto(Utente u) {
+        var el = car.OttieniElementi();
+        if (el.Count == 0) throw new InvalidOperationException("Carrello vuoto");
+        var lista = el.Select(e => new ElementoAcquistato(e.ProdottoSelezionato.CodiceProdotto, e.ProdottoSelezionato.Nome, e.QuantitaScelta, e.PrezzoUnitario)).ToList();
+        foreach(var e in el) e.ProdottoSelezionato.CambiaQuantita(-e.QuantitaScelta);
+        var nuovoAcquisto = new Acquisto(u, lista);
+        sto.RegistraAcquisto(nuovoAcquisto);
+        car.SvuotaCarrello();
+        return nuovoAcquisto;
     }
-}
-
-public class Prodotto
-{
-    public string CodiceProdotto { get; private set; }
-    public string Nome { get; private set; }
-    public decimal Prezzo { get; private set; }
-    public int QuantitaDisponibile { get; private set; }
-    public int QuantitaIniziale { get; private set; }
-
-    public Prodotto(string codiceProdotto, string nome, decimal prezzo, int quantitaDisponibile)
-    {
-        CodiceProdotto = codiceProdotto;
-        Nome = nome;
-        Prezzo = prezzo;
-        QuantitaDisponibile = quantitaDisponibile;
-        QuantitaIniziale = quantitaDisponibile;
-    }
-
-    public void CambiaPrezzo(decimal nuovoPrezzo)
-    {
-        // Metodo già implementato: centralizza la validazione del prezzo.
-        if (nuovoPrezzo <= 0)
-        {
-            throw new ArgumentException("Il prezzo deve essere maggiore di zero.");
-        }
-
-        Prezzo = nuovoPrezzo;
-    }
-
-    public void CambiaQuantita(int variazioneQuantita)
-    {
-        // Metodo già implementato: impedisce di portare il magazzino sotto zero.
-        int nuovaQuantita = QuantitaDisponibile + variazioneQuantita;
-
-        if (nuovaQuantita < 0)
-        {
-            throw new InvalidOperationException("La quantità disponibile non può diventare negativa.");
-        }
-
-        QuantitaDisponibile = nuovaQuantita;
-    }
-
-    public int CalcolaQuantitaVenduta()
-    {
-        // Metodo già implementato: serve per il report amministratore.
-        return QuantitaIniziale - QuantitaDisponibile;
-    }
-}
-
-public class ElementoCarrello
-{
-    public Prodotto ProdottoSelezionato { get; private set; }
-    public int QuantitaScelta { get; private set; }
-    public decimal PrezzoUnitario { get; private set; }
-
-    public ElementoCarrello(Prodotto prodottoSelezionato, int quantitaScelta)
-    {
-        ProdottoSelezionato = prodottoSelezionato;
-        QuantitaScelta = quantitaScelta;
-        PrezzoUnitario = prodottoSelezionato.Prezzo;
-    }
-
-    public decimal CalcolaTotaleParziale()
-    {
-        // Metodo già implementato: evita di duplicare il calcolo del parziale.
-        return PrezzoUnitario * QuantitaScelta;
-    }
-public void CambiaQuantitaScelta(int nuovaQuantita)
-{
-    if (nuovaQuantita <= 0)
-    {
-        throw new ArgumentException("La quantità scelta deve essere maggiore di zero.");
-    }
-    QuantitaScelta = nuovaQuantita;
-}
-}
-
-public class Acquisto
-{
-    public Utente Utente { get; private set; }
-    public string NomeUtente
-    {
-        get { return Utente.Nome; }
-    }
-
-    public List<ElementoAcquistato> ProdottiAcquistati { get; private set; }
-    public decimal TotaleOrdine { get; private set; }
-    public DateTime DataAcquisto { get; private set; }
-
-    public Acquisto(Utente utente, List<ElementoAcquistato> prodottiAcquistati)
-    {
-        Utente = utente;
-        ProdottiAcquistati = prodottiAcquistati;
-        DataAcquisto = DateTime.Now;
-        TotaleOrdine = CalcolaTotaleOrdine();
-    }
-
-    private decimal CalcolaTotaleOrdine()
-    {
-        // Metodo già implementato: somma tutti i parziali dei prodotti acquistati.
-        return ProdottiAcquistati.Sum(prodotto => prodotto.TotaleParziale);
-    }
-}
-
-public class ElementoAcquistato
-{
-    public string CodiceProdotto { get; private set; }
-    public string NomeProdotto { get; private set; }
-    public int QuantitaAcquistata { get; private set; }
-    public decimal PrezzoUnitario { get; private set; }
-    public decimal TotaleParziale { get; private set; }
-
-    public ElementoAcquistato(string codiceProdotto, string nomeProdotto, int quantitaAcquistata, decimal prezzoUnitario)
-    {
-        CodiceProdotto = codiceProdotto;
-        NomeProdotto = nomeProdotto;
-        QuantitaAcquistata = quantitaAcquistata;
-        PrezzoUnitario = prezzoUnitario;
-        TotaleParziale = prezzoUnitario * quantitaAcquistata;
-    }
-}
-
-public class CatalogoProdotti : IGestioneCatalogo
-{
-    private readonly List<Prodotto> prodotti;
-
-    public CatalogoProdotti()
-    {
-        prodotti = new List<Prodotto>();
-    }
-
-    public void AggiungiProdotto(Prodotto prodotto)
-    {
-        // Metodo già implementato: evita codici duplicati nel catalogo.
-        bool codiceGiaPresente = prodotti.Any(p => p.CodiceProdotto == prodotto.CodiceProdotto);
-
-        if (codiceGiaPresente)
-        {
-            throw new InvalidOperationException("Esiste già un prodotto con lo stesso codice.");
-        }
-
-        prodotti.Add(prodotto);
-    }
-
-   public bool EliminaProdotto(string codiceProdotto)
-{
-    Prodotto? prodotto = CercaProdottoPerCodice(codiceProdotto);
-    if (prodotto == null)
-    {
-        return false;
-    }
-    prodotti.Remove(prodotto);
-    return true;
-}
-
-    public Prodotto? CercaProdottoPerCodice(string codiceProdotto)
-    {
-        // Metodo già implementato: ricerca case-insensitive per rendere più comodo l'input da console.
-        return prodotti.FirstOrDefault(prodotto =>
-            prodotto.CodiceProdotto.Equals(codiceProdotto, StringComparison.OrdinalIgnoreCase));
-    }
-
-    public List<Prodotto> OttieniTuttiIProdotti()
-    {
-        // Metodo già implementato: restituisce una copia per proteggere la lista interna.
-        return new List<Prodotto>(prodotti);
-    }
-
-    public bool ModificaPrezzoProdotto(string codiceProdotto, decimal nuovoPrezzo)
-{
-    Prodotto? prodotto = CercaProdottoPerCodice(codiceProdotto);
-    if (prodotto == null)
-    {
-        return false;
-    }
-    
-    // Sfruttiamo il metodo interno di Prodotto che valida già il prezzo > 0
-    try
-    {
-        prodotto.CambiaPrezzo(nuovoPrezzo);
-        return true;
-    }
-    catch (ArgumentException)
-    {
-        return false;
-    }
-}
-
-    public bool ModificaQuantitaProdotto(string codiceProdotto, int variazioneQuantita)
-{
-    Prodotto? prodotto = CercaProdottoPerCodice(codiceProdotto);
-    if (prodotto == null)
-    {
-        return false;
-    }
-
-    try
-    {
-        prodotto.CambiaQuantita(variazioneQuantita);
-        return true;
-    }
-    catch (InvalidOperationException)
-    {
-        return false;
-    }
-}
-}
-
-public class CarrelloUtente : IGestioneCarrello
-{
-    private readonly List<ElementoCarrello> elementiCarrello;
-
-    public CarrelloUtente()
-    {
-        elementiCarrello = new List<ElementoCarrello>();
-    }
-
-    public bool AggiungiAlCarrello(Prodotto prodotto, int quantita)
-    {
-        if (quantita <= 0) return false;
-
-        // Cerco se il prodotto è già nel carrello
-        var elementoEsistente = elementiCarrello.FirstOrDefault(e => e.ProdottoSelezionato.CodiceProdotto == prodotto.CodiceProdotto);
-
-        if (elementoEsistente != null)
-        {
-            // Controllo se la somma (quantità già nel carrello + nuova) è <= disponibilità magazzino
-            if (elementoEsistente.QuantitaScelta + quantita <= prodotto.QuantitaDisponibile)
-            {
-                elementoEsistente.CambiaQuantitaScelta(elementoEsistente.QuantitaScelta + quantita);
-                return true;
-            }
-        }
-        else
-        {
-            // Nuovo inserimento
-            if (quantita <= prodotto.QuantitaDisponibile)
-            {
-                elementiCarrello.Add(new ElementoCarrello(prodotto, quantita));
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public bool ModificaQuantitaNelCarrello(string codiceProdotto, int nuovaQuantita)
-    {
-        if (nuovaQuantita <= 0) return false;
-
-        var elemento = elementiCarrello.FirstOrDefault(e => e.ProdottoSelezionato.CodiceProdotto == codiceProdotto);
-        
-        if (elemento != null)
-        {
-            // Verifica che la nuova quantità non superi la disponibilità del prodotto originale
-            if (nuovaQuantita <= elemento.ProdottoSelezionato.QuantitaDisponibile)
-            {
-                elemento.CambiaQuantitaScelta(nuovaQuantita);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public bool RimuoviDalCarrello(string codiceProdotto)
-    {
-        var elemento = elementiCarrello.FirstOrDefault(e => e.ProdottoSelezionato.CodiceProdotto == codiceProdotto);
-        if (elemento != null)
-        {
-            elementiCarrello.Remove(elemento);
-            return true;
-        }
-        return false;
-    }
-
-    public void SvuotaCarrello()
-    {
-        // Metodo già implementato: cancella tutti gli elementi del carrello.
-        elementiCarrello.Clear();
-    }
-
-    public decimal CalcolaTotale()
-    {
-        // Metodo già implementato: ricalcola sempre il totale dai parziali correnti.
-        return elementiCarrello.Sum(elemento => elemento.CalcolaTotaleParziale());
-    }
-
-    public List<ElementoCarrello> OttieniElementi()
-    {
-        // Metodo già implementato: restituisce una copia per evitare modifiche esterne dirette.
-        return new List<ElementoCarrello>(elementiCarrello);
-    }
-}
-
-public class StoricoAcquisti : IGestioneAcquisti
-{
-    private readonly List<Acquisto> acquisti;
-
-    public StoricoAcquisti()
-    {
-        acquisti = new List<Acquisto>();
-    }
-
-    public void RegistraAcquisto(Acquisto acquisto)
-    {
-        // Metodo già implementato: conserva l'acquisto in memoria durante l'esecuzione.
-        acquisti.Add(acquisto);
-    }
-
-    public List<Acquisto> OttieniTuttiGliAcquisti()
-    {
-        // Metodo già implementato: restituisce una copia dello storico.
-        return new List<Acquisto>(acquisti);
-    }
-
-    public List<Acquisto> OttieniAcquistiPerUtente(string nomeUtente)
-{
-    return acquisti
-        .Where(a => a.NomeUtente.Equals(nomeUtente, StringComparison.OrdinalIgnoreCase))
-        .ToList();
-}
-}
-
-public class ServizioNegozio
-{
-    private readonly CatalogoProdotti catalogoProdotti;
-    private readonly CarrelloUtente carrelloUtente;
-    private readonly StoricoAcquisti storicoAcquisti;
-
-    public ServizioNegozio(CatalogoProdotti catalogoProdotti, CarrelloUtente carrelloUtente, StoricoAcquisti storicoAcquisti)
-    {
-        this.catalogoProdotti = catalogoProdotti;
-        this.carrelloUtente = carrelloUtente;
-        this.storicoAcquisti = storicoAcquisti;
-    }
-
-    public bool AggiungiProdottoAlCarrello(string codiceProdotto, int quantita)
-{
-    // 1. Cerco il prodotto nel catalogo
-    Prodotto? prodotto = catalogoProdotti.CercaProdottoPerCodice(codiceProdotto);
-    
-    // 2. Se non esiste, ritorno false
-    if (prodotto == null) return false;
-    
-    // 3. Delego al carrello l'operazione (che contiene già le logiche di validazione)
-    return carrelloUtente.AggiungiAlCarrello(prodotto, quantita);
-}
-
-    public Acquisto ConfermaAcquisto(Utente utente)
-{
-    var elementi = carrelloUtente.OttieniElementi();
-    
-    // 1. Impedire acquisto se carrello vuoto
-    if (elementi.Count == 0)
-    {
-        throw new InvalidOperationException("Impossibile confermare: il carrello è vuoto.");
-    }
-
-    List<ElementoAcquistato> listaAcquistati = new List<ElementoAcquistato>();
-
-    // 2. Processo di acquisto
-    foreach (var elem in elementi)
-    {
-        // Decremento quantità in magazzino (usando il metodo CambiaQuantita del prodotto)
-        // Passiamo un valore negativo per diminuire
-        elem.ProdottoSelezionato.CambiaQuantita(-elem.QuantitaScelta);
-        
-        // Creazione dell'elemento di storico
-        listaAcquistati.Add(new ElementoAcquistato(
-            elem.ProdottoSelezionato.CodiceProdotto,
-            elem.ProdottoSelezionato.Nome,
-            elem.QuantitaScelta,
-            elem.PrezzoUnitario
-        ));
-    }
-
-    // 3. Creazione oggetto Acquisto
-    Acquisto nuovoAcquisto = new Acquisto(utente, listaAcquistati);
-
-    // 4. Registrazione e pulizia
-    storicoAcquisti.RegistraAcquisto(nuovoAcquisto);
-    carrelloUtente.SvuotaCarrello();
-
-    return nuovoAcquisto;
-}
-
-    public List<ReportProdotto> CreaReportProdotti()
-    {
-        // Metodo già implementato: prepara il report richiesto per l'amministratore.
-        return catalogoProdotti.OttieniTuttiIProdotti()
-            .Select(prodotto => new ReportProdotto(
-                prodotto.CodiceProdotto,
-                prodotto.Nome,
-                prodotto.QuantitaIniziale,
-                prodotto.CalcolaQuantitaVenduta(),
-                prodotto.QuantitaDisponibile))
-            .ToList();
-    }
-
-    public void StampaAcquisto(Acquisto acquisto)
-    {
-        // Metodo già implementato: mostra i dettagli di un acquisto completato.
-        Console.WriteLine("----------------------------------------");
-        Console.WriteLine("Utente: " + acquisto.NomeUtente);
-        Console.WriteLine("Data: " + acquisto.DataAcquisto.ToString("dd/MM/yyyy HH:mm"));
-        Console.WriteLine("Prodotti acquistati:");
-
-        foreach (ElementoAcquistato elemento in acquisto.ProdottiAcquistati)
-        {
-            Console.WriteLine(
-                "- " + elemento.CodiceProdotto + " - " +
-                elemento.NomeProdotto + " - " +
-                "Quantità: " + elemento.QuantitaAcquistata + " - " +
-                "Prezzo unitario: " + elemento.PrezzoUnitario.ToString("0.00") + " euro - " +
-                "Parziale: " + elemento.TotaleParziale.ToString("0.00") + " euro");
-        }
-
-        Console.WriteLine("Totale ordine: " + acquisto.TotaleOrdine.ToString("0.00") + " euro");
-    }
-
-    public void StampaReportProdotti()
-    {
-        // Metodo già implementato: mostra il report quantità richiesto all'amministratore.
-        List<ReportProdotto> report = CreaReportProdotti();
-
-        Console.WriteLine();
-        Console.WriteLine("=== REPORT PRODOTTI ===");
-
-        if (report.Count == 0)
-        {
-            Console.WriteLine("Nessun prodotto presente nel catalogo.");
-            return;
-        }
-
-        foreach (ReportProdotto riga in report)
-        {
-            Console.WriteLine(
-                riga.CodiceProdotto + " - " +
-                riga.NomeProdotto + " - " +
-                "Iniziale: " + riga.QuantitaIniziale + " - " +
-                "Venduta: " + riga.QuantitaVenduta + " - " +
-                "Disponibile: " + riga.QuantitaDisponibile);
-        }
-    }
-}
-
-public class ReportProdotto
-{
-    public string CodiceProdotto { get; private set; }
-    public string NomeProdotto { get; private set; }
-    public int QuantitaIniziale { get; private set; }
-    public int QuantitaVenduta { get; private set; }
-    public int QuantitaDisponibile { get; private set; }
-
-    public ReportProdotto(string codiceProdotto, string nomeProdotto, int quantitaIniziale, int quantitaVenduta, int quantitaDisponibile)
-    {
-        CodiceProdotto = codiceProdotto;
-        NomeProdotto = nomeProdotto;
-        QuantitaIniziale = quantitaIniziale;
-        QuantitaVenduta = quantitaVenduta;
-        QuantitaDisponibile = quantitaDisponibile;
-    }
+    public List<ReportProdotto> CreaReportProdotti() => cat.OttieniTuttiIProdotti().Select(p => new ReportProdotto(p.CodiceProdotto, p.Nome, p.QuantitaIniziale, p.CalcolaQuantitaVenduta(), p.QuantitaDisponibile)).ToList();
+    public void StampaAcquisto(Acquisto a) { }
+    public void StampaReportProdotti() { }
 }
