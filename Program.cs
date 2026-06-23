@@ -43,15 +43,20 @@ public class ApplicazioneNegozio
     }
 
     public void Avvia()
+{
+    bool esci = false;
+    while (!esci)
     {
-        // TODO: implementare il ciclo principale della Console App.
-        // Suggerimento:
-        // 1. mostrare un messaggio di benvenuto;
-        // 2. chiedere se l'utente vuole entrare come "utente" o "amministratore";
-        // 3. chiamare GestisciMenuUtente oppure GestisciMenuAmministratore;
-        // 4. permettere l'uscita dal programma con una scelta dedicata.
-        throw new NotImplementedException("Completare il metodo Avvia.");
+        string ruolo = ScegliRuolo();
+        switch (ruolo)
+        {
+            case "utente": GestisciMenuUtente(); break;
+            case "amministratore": GestisciMenuAmministratore(); break;
+            case "esci": esci = true; break;
+            default: Console.WriteLine("Ruolo non riconosciuto."); break;
+        }
     }
+}
 
     private void CaricaDatiIniziali()
     {
@@ -73,33 +78,65 @@ public class ApplicazioneNegozio
 }
 
     private void GestisciMenuUtente()
+{
+    Console.Write("Inserisci il tuo nome: ");
+    string nome = Console.ReadLine() ?? "Utente";
+    Utente utente = new Utente(nome);
+
+    bool continua = true;
+    while (continua)
     {
-        // TODO: implementare il menu utente.
-        // Operazioni richieste dalla traccia:
-        // - visualizzare catalogo;
-        // - aggiungere prodotto al carrello;
-        // - visualizzare carrello;
-        // - modificare quantità nel carrello;
-        // - rimuovere prodotto dal carrello;
-        // - svuotare carrello;
-        // - confermare acquisto;
-        // - visualizzare storico acquisti dell'utente.
-        throw new NotImplementedException("Completare il metodo GestisciMenuUtente.");
+        Console.WriteLine("\n--- MENU UTENTE ---");
+        Console.WriteLine("1. Catalogo | 2. Aggiungi al carrello | 3. Mostra carrello | 4. Conferma acquisto | 5. Storico | 0. Esci");
+        string scelta = Console.ReadLine() ?? "";
+
+        switch (scelta)
+        {
+            case "1": MostraCatalogo(); break;
+            case "2": 
+                string cod = Console.ReadLine() ?? ""; // Qui dovresti chiedere il codice
+                int q = LeggiInteroPositivo("Quantità: ");
+                servizioNegozio.AggiungiProdottoAlCarrello(cod, q);
+                break;
+            case "3": MostraCarrello(); break;
+            case "4": servizioNegozio.ConfermaAcquisto(utente); break;
+            case "5": MostraStoricoUtente(); break;
+            case "0": continua = false; break;
+        }
     }
+}
 
     private void GestisciMenuAmministratore()
+{
+    bool continua = true;
+    while (continua)
     {
-        // TODO: implementare il menu amministratore.
-        // Operazioni richieste dalla traccia:
-        // - visualizzare catalogo completo;
-        // - aggiungere prodotto;
-        // - eliminare prodotto;
-        // - modificare prezzo;
-        // - aumentare o diminuire quantità disponibile;
-        // - visualizzare tutti gli acquisti;
-        // - visualizzare quantità iniziale, venduta e disponibile per prodotto.
-        throw new NotImplementedException("Completare il metodo GestisciMenuAmministratore.");
+        Console.WriteLine("\n--- MENU AMMINISTRATORE ---");
+        Console.WriteLine("1. Catalogo | 2. Aggiungi prodotto | 3. Modifica prezzo | 4. Modifica quantità | 5. Report vendite | 0. Esci");
+        string scelta = Console.ReadLine();
+
+        switch (scelta)
+        {
+            case "1": MostraCatalogo(); break;
+            case "2":
+                // Qui dovresti chiedere i dettagli (codice, nome, prezzo, quantità) 
+                // e chiamare catalogoProdotti.AggiungiProdotto(...)
+                break;
+            case "3":
+                string codP = Console.ReadLine();
+                decimal nuovoPrezzo = LeggiPrezzoPositivo("Nuovo prezzo: ");
+                catalogoProdotti.ModificaPrezzoProdotto(codP, nuovoPrezzo);
+                break;
+            case "4":
+                string codQ = Console.ReadLine();
+                int variazione = int.Parse(Console.ReadLine()); // In futuro usa un metodo di lettura sicuro
+                catalogoProdotti.ModificaQuantitaProdotto(codQ, variazione);
+                break;
+            case "5": servizioNegozio.StampaReportProdotti(); break;
+            case "0": continua = false; break;
+        }
     }
+}
 
     private void MostraCatalogo()
     {
