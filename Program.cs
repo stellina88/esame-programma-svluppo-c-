@@ -63,12 +63,14 @@ public class ApplicazioneNegozio
     }
 
     private string ScegliRuolo()
-    {
-        // TODO: leggere da console il ruolo scelto.
-        // Valori consigliati: "utente", "amministratore", "esci".
-        // Gestire input vuoti e maiuscole/minuscole con Trim() e ToLower().
-        throw new NotImplementedException("Completare il metodo ScegliRuolo.");
-    }
+{
+    Console.WriteLine("\n=== BENVENUTO NEL NEGOZIO ===");
+    Console.WriteLine("Inserisci il ruolo (utente / amministratore) o 'esci' per chiudere:");
+    string? input = Console.ReadLine()?.Trim().ToLower();
+    
+    if (string.IsNullOrEmpty(input)) return "";
+    return input;
+}
 
     private void GestisciMenuUtente()
     {
