@@ -571,25 +571,54 @@ public class ServizioNegozio
     }
 
     public bool AggiungiProdottoAlCarrello(string codiceProdotto, int quantita)
-    {
-        // TODO: cercare il prodotto nel catalogo e delegare a carrelloUtente.AggiungiAlCarrello.
-        // Restituire false se il prodotto non esiste o se la quantità non è valida.
-        throw new NotImplementedException("Completare il metodo AggiungiProdottoAlCarrello.");
-    }
+{
+    // 1. Cerco il prodotto nel catalogo
+    Prodotto? prodotto = catalogoProdotti.CercaProdottoPerCodice(codiceProdotto);
+    
+    // 2. Se non esiste, ritorno false
+    if (prodotto == null) return false;
+    
+    // 3. Delego al carrello l'operazione (che contiene già le logiche di validazione)
+    return carrelloUtente.AggiungiAlCarrello(prodotto, quantita);
+}
 
     public Acquisto ConfermaAcquisto(Utente utente)
+{
+    var elementi = carrelloUtente.OttieniElementi();
+    
+    // 1. Impedire acquisto se carrello vuoto
+    if (elementi.Count == 0)
     {
-        // TODO: completare la conferma dell'acquisto.
-        // Regole richieste dalla traccia:
-        // - impedire l'acquisto se il carrello è vuoto;
-        // - ricontrollare che ogni quantità sia valida e disponibile in magazzino;
-        // - creare gli ElementoAcquistato partendo dagli elementi del carrello;
-        // - diminuire la quantità disponibile dei prodotti acquistati;
-        // - registrare l'acquisto nello storico;
-        // - svuotare il carrello dopo un acquisto completato;
-        // - creare e restituire un Acquisto associato all'Utente ricevuto.
-        throw new NotImplementedException("Completare il metodo ConfermaAcquisto.");
+        throw new InvalidOperationException("Impossibile confermare: il carrello è vuoto.");
     }
+
+    List<ElementoAcquistato> listaAcquistati = new List<ElementoAcquistato>();
+
+    // 2. Processo di acquisto
+    foreach (var elem in elementi)
+    {
+        // Decremento quantità in magazzino (usando il metodo CambiaQuantita del prodotto)
+        // Passiamo un valore negativo per diminuire
+        elem.ProdottoSelezionato.CambiaQuantita(-elem.QuantitaScelta);
+        
+        // Creazione dell'elemento di storico
+        listaAcquistati.Add(new ElementoAcquistato(
+            elem.ProdottoSelezionato.CodiceProdotto,
+            elem.ProdottoSelezionato.Nome,
+            elem.QuantitaScelta,
+            elem.PrezzoUnitario
+        ));
+    }
+
+    // 3. Creazione oggetto Acquisto
+    Acquisto nuovoAcquisto = new Acquisto(utente, listaAcquistati);
+
+    // 4. Registrazione e pulizia
+    storicoAcquisti.RegistraAcquisto(nuovoAcquisto);
+    carrelloUtente.SvuotaCarrello();
+
+    return nuovoAcquisto;
+}
 
     public List<ReportProdotto> CreaReportProdotti()
     {
