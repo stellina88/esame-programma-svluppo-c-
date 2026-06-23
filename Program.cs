@@ -180,11 +180,32 @@ public class ApplicazioneNegozio
     }
 
     private int LeggiInteroPositivo(string messaggio)
+{
+    int valore;
+    while (true)
     {
-        // TODO: leggere un numero intero positivo da console.
-        // Continuare a chiedere il valore finché l'utente non inserisce un intero > 0.
-        throw new NotImplementedException("Completare il metodo LeggiInteroPositivo.");
+        Console.Write(messaggio);
+        if (int.TryParse(Console.ReadLine(), out valore) && valore > 0)
+        {
+            return valore;
+        }
+        Console.WriteLine("Input non valido. Inserire un numero intero positivo.");
     }
+}
+
+private decimal LeggiPrezzoPositivo(string messaggio)
+{
+    decimal valore;
+    while (true)
+    {
+        Console.Write(messaggio);
+        if (decimal.TryParse(Console.ReadLine(), out valore) && valore > 0)
+        {
+            return valore;
+        }
+        Console.WriteLine("Input non valido. Inserire un prezzo positivo.");
+    }
+}
 
     private decimal LeggiPrezzoPositivo(string messaggio)
     {
