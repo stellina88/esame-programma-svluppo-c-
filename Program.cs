@@ -302,14 +302,14 @@ public class ElementoCarrello
         // Metodo già implementato: evita di duplicare il calcolo del parziale.
         return PrezzoUnitario * QuantitaScelta;
     }
-
-    public void CambiaQuantitaScelta(int nuovaQuantita)
+public void CambiaQuantitaScelta(int nuovaQuantita)
+{
+    if (nuovaQuantita <= 0)
     {
-        // TODO: validare che la nuova quantità sia maggiore di zero.
-        // Se è valida, aggiornare QuantitaScelta.
-        // Se non è valida, lanciare ArgumentException con un messaggio comprensibile.
-        throw new NotImplementedException("Completare il metodo CambiaQuantitaScelta.");
+        throw new ArgumentException("La quantità scelta deve essere maggiore di zero.");
     }
+    QuantitaScelta = nuovaQuantita;
+}
 }
 
 public class Acquisto
@@ -379,12 +379,16 @@ public class CatalogoProdotti : IGestioneCatalogo
         prodotti.Add(prodotto);
     }
 
-    public bool EliminaProdotto(string codiceProdotto)
+   public bool EliminaProdotto(string codiceProdotto)
+{
+    Prodotto? prodotto = CercaProdottoPerCodice(codiceProdotto);
+    if (prodotto == null)
     {
-        // TODO: cercare il prodotto tramite codice e rimuoverlo dalla lista.
-        // Restituire true se il prodotto è stato eliminato, false se non esiste.
-        throw new NotImplementedException("Completare il metodo EliminaProdotto.");
+        return false;
     }
+    prodotti.Remove(prodotto);
+    return true;
+}
 
     public Prodotto? CercaProdottoPerCodice(string codiceProdotto)
     {
@@ -400,18 +404,43 @@ public class CatalogoProdotti : IGestioneCatalogo
     }
 
     public bool ModificaPrezzoProdotto(string codiceProdotto, decimal nuovoPrezzo)
+{
+    Prodotto? prodotto = CercaProdottoPerCodice(codiceProdotto);
+    if (prodotto == null)
     {
-        // TODO: trovare il prodotto e chiamare prodotto.CambiaPrezzo(nuovoPrezzo).
-        // Restituire false se il codice non esiste.
-        throw new NotImplementedException("Completare il metodo ModificaPrezzoProdotto.");
+        return false;
     }
+    
+    // Sfruttiamo il metodo interno di Prodotto che valida già il prezzo > 0
+    try
+    {
+        prodotto.CambiaPrezzo(nuovoPrezzo);
+        return true;
+    }
+    catch (ArgumentException)
+    {
+        return false;
+    }
+}
 
     public bool ModificaQuantitaProdotto(string codiceProdotto, int variazioneQuantita)
+{
+    Prodotto? prodotto = CercaProdottoPerCodice(codiceProdotto);
+    if (prodotto == null)
     {
-        // TODO: trovare il prodotto e chiamare prodotto.CambiaQuantita(variazioneQuantita).
-        // La variazione può essere positiva o negativa, ma il magazzino non deve scendere sotto zero.
-        throw new NotImplementedException("Completare il metodo ModificaQuantitaProdotto.");
+        return false;
     }
+
+    try
+    {
+        prodotto.CambiaQuantita(variazioneQuantita);
+        return true;
+    }
+    catch (InvalidOperationException)
+    {
+        return false;
+    }
+}
 }
 
 public class CarrelloUtente : IGestioneCarrello
@@ -491,11 +520,11 @@ public class StoricoAcquisti : IGestioneAcquisti
     }
 
     public List<Acquisto> OttieniAcquistiPerUtente(string nomeUtente)
-    {
-        // TODO: filtrare gli acquisti per nome utente.
-        // Consiglio: usare StringComparison.OrdinalIgnoreCase per ignorare maiuscole/minuscole.
-        throw new NotImplementedException("Completare il metodo OttieniAcquistiPerUtente.");
-    }
+{
+    return acquisti
+        .Where(a => a.NomeUtente.Equals(nomeUtente, StringComparison.OrdinalIgnoreCase))
+        .ToList();
+}
 }
 
 public class ServizioNegozio
